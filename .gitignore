@@ -1,1 +1,4 @@
-Data/
+BigDataFormattedData/*
+images/*
+.ipynb_checkpoints/*
+Data/*
