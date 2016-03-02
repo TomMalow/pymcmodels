@@ -164,13 +164,13 @@ def execute_model_map(model, samples):
     map_ = pm.MAP(model)
     map_.fit()
     mcmc = pm.MCMC(model)
-    mcmc.sample(samples)#, progress_bar=False)
+    mcmc.sample(samples, progress_bar=False)
     return mcmc
 
 
 def execute_model_no_map(model, samples, burn):
     mcmc = pm.MCMC(model)
-    mcmc.sample(samples, burn=burn)#, progress_bar=False)
+    mcmc.sample(samples, burn=burn, progress_bar=False)
     return mcmc
 
 
@@ -246,10 +246,9 @@ def find_MSE(assignment_data, mcmc_handins, find, func='mean'):
     return MSE_M
 
 # assignments graders, gradings per grader
-setup = [(1, 10, 5),
-         (2, 10, 5),
-         (1, 20, 10),
-         (2, 20, 10)]
+setup = [(1, 10, 5), (1, 20, 5), (1, 50, 5), (1, 100, 5),
+         (1, 20, 10), (1, 50, 10), (1, 100, 10),
+         (2, 10, 5), (2, 20, 5), (2, 50, 5), (2, 100, 5)]
 
 for i, (assignments, graders, gradings) in enumerate(setup):
     print "Running setup %i" % (i+1)
@@ -258,19 +257,10 @@ for i, (assignments, graders, gradings) in enumerate(setup):
     print ""
 
     print "Generating data"
-    tc = time.clock()
-    tw = time.time()
     data = generate_data(assignments, graders, gradings)
-    print "Process time: %f" % (time.clock() - tc)
-    print "Wall time: %f" % (time.time() - tw)
-
     print "Building model"
-    tc = time.clock()
-    tw = time.time()
     mcmc = build_mcmc(Model, data)
-    print "Process time: %f" % (time.clock() - tc)
-    print "Wall time: %f" % (time.time() - tw)
-
+    
     print "Executing model with no MAP"
     tc = time.clock()
     tw = time.time()
