@@ -1,4 +1,4 @@
-#PBS -l walltime=04:00:00
+#PBS -l walltime=06:00:00
 #PBS -m abe
 #PBS -M s103407@student.dtu.dk
 

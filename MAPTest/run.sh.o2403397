@@ -1,0 +1,240 @@
+Running setup 1
+1 assignments, 10 graders, 5 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 52.680000
+Wall time: 52.926037
+Executing model with MAP
+Process time: 17.340000
+Wall time: 17.394718
+
+Calculating Mean Square Error
+No MAP used: 0.00741566416253
+MAP used: 0.0038712763065
+
+Running setup 2
+1 assignments, 25 graders, 5 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 135.260000
+Wall time: 135.434134
+Executing model with MAP
+Process time: 83.040000
+Wall time: 83.110631
+
+Calculating Mean Square Error
+No MAP used: 0.00172148892856
+MAP used: 0.00198619501123
+
+Running setup 3
+1 assignments, 50 graders, 5 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 263.530000
+Wall time: 263.826781
+Executing model with MAP
+Process time: 376.630000
+Wall time: 376.846939
+
+Calculating Mean Square Error
+No MAP used: 0.00311335560883
+MAP used: 0.00333418202202
+
+Running setup 4
+1 assignments, 75 graders, 5 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 405.550000
+Wall time: 405.950860
+Executing model with MAP
+Process time: 622.320000
+Wall time: 623.360426
+
+Calculating Mean Square Error
+No MAP used: 0.00342984235016
+MAP used: 0.00357793749179
+
+Running setup 5
+1 assignments, 100 graders, 5 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 510.610000
+Wall time: 510.913396
+Executing model with MAP
+Process time: 2176.420000
+Wall time: 2178.053913
+
+Calculating Mean Square Error
+No MAP used: 0.0027808105486
+MAP used: 0.00291477169647
+
+Running setup 6
+1 assignments, 11 graders, 10 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 92.510000
+Wall time: 92.606165
+Executing model with MAP
+Process time: 29.230000
+Wall time: 29.251512
+
+Calculating Mean Square Error
+No MAP used: 0.000920858289528
+MAP used: 0.000909238545598
+
+Running setup 7
+1 assignments, 25 graders, 10 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 208.950000
+Wall time: 209.142092
+Executing model with MAP
+Process time: 85.090000
+Wall time: 85.174184
+
+Calculating Mean Square Error
+No MAP used: 0.00191445167068
+MAP used: 0.00207297092275
+
+Running setup 8
+1 assignments, 50 graders, 10 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 441.560000
+Wall time: 441.984698
+Executing model with MAP
+Process time: 412.200000
+Wall time: 412.450215
+
+Calculating Mean Square Error
+No MAP used: 0.00265583792402
+MAP used: 0.00253389142967
+
+Running setup 9
+1 assignments, 75 graders, 10 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 679.950000
+Wall time: 680.459289
+Executing model with MAP
+Process time: 525.600000
+Wall time: 525.915773
+
+Calculating Mean Square Error
+No MAP used: 0.00202617517182
+MAP used: 0.0021086392097
+
+Running setup 10
+1 assignments, 100 graders, 10 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 896.110000
+Wall time: 896.673104
+Executing model with MAP
+Process time: 1450.020000
+Wall time: 1450.916012
+
+Calculating Mean Square Error
+No MAP used: 0.00167275229378
+MAP used: 0.00198124916808
+
+Running setup 11
+2 assignments, 10 graders, 5 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 95.810000
+Wall time: 95.868462
+Executing model with MAP
+Process time: 34.380000
+Wall time: 34.399942
+
+Calculating Mean Square Error
+No MAP used: 0.00159022225517
+MAP used: 0.00161970533525
+
+Running setup 12
+2 assignments, 25 graders, 5 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 238.680000
+Wall time: 238.818824
+Executing model with MAP
+Process time: 104.440000
+Wall time: 104.504534
+
+Calculating Mean Square Error
+No MAP used: 0.00221384241717
+MAP used: 0.00223938034666
+
+Running setup 13
+2 assignments, 50 graders, 5 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 492.900000
+Wall time: 493.209580
+Executing model with MAP
+Process time: 661.480000
+Wall time: 662.198828
+
+Calculating Mean Square Error
+No MAP used: 0.00223482632479
+MAP used: 0.0023394252599
+
+Running setup 14
+2 assignments, 75 graders, 5 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 788.250000
+Wall time: 789.314926
+Executing model with MAP
+Process time: 1280.430000
+Wall time: 1281.555315
+
+Calculating Mean Square Error
+No MAP used: 0.00181455776138
+MAP used: 0.00184482617533
+
+Running setup 15
+2 assignments, 100 graders, 5 gradings per grader
+
+Generating data
+Building model
+Executing model with no MAP
+Process time: 1037.370000
+Wall time: 1038.258642
+Executing model with MAP
+Process time: 2824.240000
+Wall time: 2829.493589
+
+Calculating Mean Square Error
+No MAP used: 0.00180588098216
+MAP used: 0.0022923245892
+

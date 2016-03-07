@@ -246,9 +246,9 @@ def find_MSE(assignment_data, mcmc_handins, find, func='mean'):
     return MSE_M
 
 # assignments graders, gradings per grader
-setup = [(1, 10, 5), (1, 20, 5), (1, 50, 5), (1, 100, 5),
-         (1, 20, 10), (1, 50, 10), (1, 100, 10),
-         (2, 10, 5), (2, 20, 5), (2, 50, 5), (2, 100, 5)]
+setup = [(1, 10, 5), (1, 25, 5), (1, 50, 5), (1, 75, 5), (1, 100, 5),
+         (1, 11, 10), (1, 25, 10), (1, 50, 10), (1, 75, 10), (1, 100, 10),
+         (2, 10, 5), (2, 25, 5), (2, 50, 5), (2, 75, 5), (2, 100, 5)]
 
 for i, (assignments, graders, gradings) in enumerate(setup):
     print "Running setup %i" % (i+1)
