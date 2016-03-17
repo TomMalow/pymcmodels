@@ -112,9 +112,9 @@ def generate_data(assignments, graders, handins):
     graders_data = list()
 
     for i in xrange(0, graders):
-        g = grader('grader_%i' % i, B_mu.random(), B_tau.random())
+        g = grader('%i' % i, B_mu.random(), B_tau.random())
         t_mu = random_limit(T_mu)
-        h = handin('handin_%i' % i, g, t_mu, T_tau.random())
+        h = handin('%i' % i, g, t_mu, T_tau.random())
         graders_data.append(g)
         handins_data.append(h)
 
@@ -129,7 +129,7 @@ def generate_data(assignments, graders, handins):
         grader_max = grader_min + graders
         for i in xrange(grader_min, grader_max):
             t_mu = random_limit(T_mu)
-            h = handin('handin_%i' % i, graders_data[i-grader_min], t_mu, T_tau.random())
+            h = handin('%i' % i, graders_data[i-grader_min], t_mu, T_tau.random())
             handins_data_e.append(h)
             
         assignment_data_e = assignment(handins_data_e, graders_data)
@@ -400,9 +400,9 @@ def find_MSE(scores):
     MSE.append(sum(map(lambda x: (float(x[1]) - float(x[0])) ** 2, scores)) / len(scores))
     MSE.append(sum(map(lambda x: (float(x[2]) - float(x[0])) ** 2, scores)) / len(scores))
 
-    if len(scores[0]) > 4:
+    if len(scores[0]) > 3:
         MSE.append(sum(map(lambda x: (float(x[3]) - float(x[0])) ** 2, scores)) / len(scores))
-    return ",".join(map(str, MSE))
+    return ", ".join(map(str, MSE))
 
 # assignments graders, gradings per grader
 setup = [(1, 10, 5), (1, 25, 5), (1, 50, 5), (1, 75, 5), (1, 100, 5),
@@ -417,13 +417,13 @@ for i, (assignments, graders, gradings) in enumerate(setup):
     print ""
     course = generate_data(assignments, graders, gradings)
     
-    "Execution time"
+    print"Execution time"
     print "Gibbs: ",
     tw = time.time()
     traces = gibbs_model(course)
     print "%f" % (time.time() - tw)
 
-    print "Metropolish_Hastings: ",
+    print "MH: ",
     tw = time.time()
     traces_MH = MH_model(course)
     print "%f" % (time.time() - tw)
