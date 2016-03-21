@@ -1,0 +1,180 @@
+1 assignments, 10 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  12.790668
+MH:  57.900565
+Mean Square Error
+Bias:  0.00396215658112, 0.00343636958957
+True Value:  0.00272705178409, 0.0027463744647, 0.00311128037185
+
+1 assignments, 25 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  32.284305
+MH:  140.570326
+Mean Square Error
+Bias:  0.00285561143077, 0.00395592125052
+True Value:  0.00250728724234, 0.00352538186455, 0.00384835208263
+
+1 assignments, 50 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  68.285382
+MH:  281.178547
+Mean Square Error
+Bias:  0.00383541887605, 0.00372771252952
+True Value:  0.00459256753135, 0.00427013361387, 0.00616191163581
+
+1 assignments, 75 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  91.985414
+MH:  447.503698
+Mean Square Error
+Bias:  0.00280533557864, 0.0025986408138
+True Value:  0.00266882995201, 0.00276971297747, 0.00306393157206
+
+1 assignments, 100 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  129.621921
+MH:  558.601702
+Mean Square Error
+Bias:  0.00251112666561, 0.00250678034188
+True Value:  0.00228008582889, 0.00265241005475, 0.0033907274497
+
+1 assignments, 11 graders, 10 gradings per grader
+
+Execution time
+Gibbs:  23.696377
+MH:  116.236462
+Mean Square Error
+Bias:  0.000854223492284, 0.00105032433118
+True Value:  0.00174331349455, 0.00190213670446, 0.0019612604557
+
+1 assignments, 25 graders, 10 gradings per grader
+
+Execution time
+Gibbs:  40.671939
+MH:  242.797992
+Mean Square Error
+Bias:  0.00133070544603, 0.00207421174465
+True Value:  0.00195038199833, 0.00273662005329, 0.00224812366911
+
+1 assignments, 50 graders, 10 gradings per grader
+
+Execution time
+Gibbs:  96.136426
+MH:  428.017783
+Mean Square Error
+Bias:  0.00183605346996, 0.00220988137931
+True Value:  0.00165732530891, 0.00218663003312, 0.0031741958337
+
+1 assignments, 75 graders, 10 gradings per grader
+
+Execution time
+Gibbs:  123.505629
+MH:  639.077949
+Mean Square Error
+Bias:  0.00177382572923, 0.00148734178691
+True Value:  0.00165793215611, 0.00171991355932, 0.0025868150629
+
+1 assignments, 100 graders, 10 gradings per grader
+
+Execution time
+Gibbs:  190.602098
+MH:  945.197916
+Mean Square Error
+Bias:  0.00174598893287, 0.00176112885776
+True Value:  0.00232035214017, 0.0023662505256, 0.00190475691097
+
+2 assignments, 10 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  21.751322
+MH:  101.280998
+Mean Square Error
+Bias:  0.000599552194611, 0.000519534729924
+True Value:  0.00223887189899, 0.00231166016777, 0.00319358329857
+
+2 assignments, 25 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  54.091325
+MH:  258.348642
+Mean Square Error
+Bias:  0.00170217767175, 0.00305809066191
+True Value:  0.0030161347189, 0.00398030763048, 0.00370361188839
+
+2 assignments, 50 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  105.476111
+MH:  515.320637
+Mean Square Error
+Bias:  0.00258637781625, 0.00222773010294
+True Value:  0.00316105874037, 0.0028240074092, 0.00472583524955
+
+2 assignments, 75 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  166.690170
+MH:  776.501201
+Mean Square Error
+Bias:  0.00157667919136, 0.00161864476224
+True Value:  0.00294835315311, 0.00315895305577, 0.00379260791628
+
+2 assignments, 100 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  221.209965
+MH:  1028.303392
+Mean Square Error
+Bias:  0.00257505035508, 0.00300899111693
+True Value:  0.00312691537836, 0.00329034855292, 0.00424165249886
+
+3 assignments, 10 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  31.666683
+MH:  148.298801
+Mean Square Error
+Bias:  0.000817218588415, 0.000902813203429
+True Value:  0.00284995882368, 0.00295207814728, 0.00323563855712
+
+3 assignments, 25 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  76.958194
+MH:  367.428722
+Mean Square Error
+Bias:  0.00135636362453, 0.0015005991747
+True Value:  0.00240201542534, 0.00245042571276, 0.00313310956358
+
+3 assignments, 50 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  153.502610
+MH:  675.222766
+Mean Square Error
+Bias:  0.00154867821043, 0.00161655637221
+True Value:  0.00316103554345, 0.00348670731758, 0.00468350612372
+
+3 assignments, 75 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  214.330730
+MH:  997.277463
+Mean Square Error
+Bias:  0.00133214750441, 0.00147556230014
+True Value:  0.00312192644253, 0.00316746212354, 0.00371006421091
+
+3 assignments, 100 graders, 5 gradings per grader
+
+Execution time
+Gibbs:  291.216917
+MH:  1386.321223
+Mean Square Error
+Bias:  0.0013597008557, 0.0016001974907
+True Value:  0.00387072790262, 0.00375904903641, 0.00531846003212
+
