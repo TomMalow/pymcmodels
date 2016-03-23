@@ -174,6 +174,7 @@ def gibbs_model(data, int samples, int burn_in):
     cdef int r, n_gradings
     cdef float sum_, v, la_, be_, al_
     for r in range(burn_in + samples):
+        print r
         # Sample T
         for h in range(N_H):
             handin = data.handins[str(h)]
