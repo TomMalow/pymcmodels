@@ -1,10 +1,10 @@
 import sys
-
 import time
 from collections import defaultdict
 import numpy as np
 
 sys.path.insert(0,'../../Peergrade/peergrade/')
+
 import application.model as data_model
 
 class Grader_(object):
@@ -166,9 +166,9 @@ def gibbs_model(data):
     u_h = defaultdict(dict)
     t_h = defaultdict(dict)
     T = defaultdict(dict)
+    B = defaultdict(dict)
     u_g = dict()
     t_g = dict()
-    B = dict()
 
     # Draw from priors
     e = np.random.gamma(al_e,1.0/be_e)
@@ -180,12 +180,13 @@ def gibbs_model(data):
     for g, grader in data.graders.iteritems():
         t_g[g] = np.random.gamma(al_g,1.0/be_g)
         u_g[g] = np.random.normal(ga_g,np.sqrt(1.0/(la_g * t_g[g])))
-        B[g] = np.random.normal(u_g[g],np.sqrt(1.0/t_g[g]))
+        for q in data.questions.iterkeys():
+            B[g][q] = np.random.normal(u_g[g],np.sqrt(1.0/t_g[g]))
 
     # Gibbs sampling
     
     burn_in = 1000  # warm-up steps
-    samples = 2000 # Gibbs sampling steps
+    samples = 5000 # Gibbs sampling steps
     
     # Tracers initialising
     acc_e = 0
@@ -194,7 +195,7 @@ def gibbs_model(data):
     acc_u_g = defaultdict(lambda : 0)
     acc_t_g = defaultdict(lambda : 0)
     acc_T = defaultdict(lambda: defaultdict(lambda : 0))
-    acc_B = defaultdict(lambda : 0)
+    acc_B = defaultdict(lambda: defaultdict(lambda : 0))
 
     tw = time.time()
     for r in range(burn_in + samples):
@@ -202,24 +203,23 @@ def gibbs_model(data):
         # Sample T
         for h, handin in data.handins.iteritems():
             for q, answer in handin.answers.iteritems():
-                n_gradings = 0
+                n_gradings = len(answer)
                 sum_ = 0.0
                 for g, val in answer.iteritems():
-                    n_gradings = n_gradings + 1
-                    sum_ = sum_ + val - B[g]
+                    sum_ = sum_ + val - B[g][q]
                 v = e*n_gradings+t_h[h][q]
                 T[h][q] = np.random.normal((u_h[h][q]*t_h[h][q]+e*sum_)/v,np.sqrt(1/v))
             
         # Sample B
         for g, grader in data.graders.iteritems():
-            n_gradings = 0
-            sum_ = 0.0
-            for h in grader.handins:
-                for q, answer in h.answers.iteritems():
+            for q in data.questions.iterkeys():
+                n_gradings = 0
+                sum_ = 0.0
+                for h in grader.handins:
                     n_gradings = n_gradings + 1
-                    sum_ = sum_ + answer[g] - T[h.id][q]
-            v = e * n_gradings + t_g[g]
-            B[g] = np.random.normal((u_g[g]*t_g[g]+e*sum_)/v,np.sqrt(1/v))
+                    sum_ = sum_ + h.answers[q][g] - T[h.id][q]
+                v = e * n_gradings + t_g[g]
+                B[g][q] = np.random.normal((u_g[g]*t_g[g]+e*sum_)/v,np.sqrt(1/v))
         
         # Sample e
         sum_ = 0.0
@@ -228,30 +228,29 @@ def gibbs_model(data):
             for q, answers in handin.answers.iteritems():
                 for g, answer_val in answers.iteritems():
                     n_eval = n_eval + 1
-                    sum_ = sum_ + np.square(answer_val - (T[h][q]+B[g]))
+                    sum_ = sum_ + np.square(answer_val - (T[h][q]+B[g][q]))
         e = np.random.gamma(al_e+0.5*n_eval,1.0/(be_e+0.5*sum_))
 
         # Sample u_h and t_h
         for h, handin in data.handins.iteritems():
             for q in handin.answers.iterkeys():
-                Q = len(handin.answers.keys())
-                la_ = (la_h+Q)
+                la_ = (la_h+1.0)
                 al_ = al_h + 0.5 * la_h + 0.5 * np.square(T[h][q]-u_h[h][q])
-                be_ = be_h + 0.5 + 0.5 * Q
-    #            al_ = al_h+0.5
-    #            be_ = be_h+0.5*((la_h*np.square(T[h]-ga_h))/la_)
+                be_ = be_h + 0.5 + 0.5 * 1.0
+#                al_ = al_h+0.5
+#                be_ = be_h+0.5*((la_h*np.square(T[h][q]-ga_h))/la_)
                 t_h[h][q] = np.random.gamma(al_,1.0/be_)
                 u_h[h][q] = np.random.normal((la_h*ga_h+T[h][q])/la_,np.sqrt(1.0/(la_*t_h[h][q])))
 
         # Sample u_g and t_g
         for g in data.graders.iterkeys():
-            la_ = (la_g+1)
-            al_ = al_g + 0.5 * la_g + 0.5 * np.square(B[g]-u_g[g])
-            be_ = be_g + 0.5 + 0.5 * 1
+            la_ = (la_g+1.0)
+            al_ = al_g + 0.5 * la_g + 0.5 * np.square(B[g][q]-u_g[g])
+            be_ = be_g + 0.5 + 0.5 * 1.0
 #            al_ = al_g+0.5
 #            be_ = be_g+0.5*((la_g*np.square(B[g]-ga_g))/la_)
             t_g[g] = np.random.gamma(al_,1.0/be_)
-            u_g[g] = np.random.normal((la_g*ga_g+B[g])/la_,np.sqrt(1.0/(t_g[g])))
+            u_g[g] = np.random.normal((la_g*ga_g+B[g][q])/la_,np.sqrt(1.0/(t_g[g])))
             
         # Collect tracings
         if r > burn_in:
@@ -264,7 +263,8 @@ def gibbs_model(data):
             for g in data.graders.iterkeys():
                 acc_u_g[g] = acc_u_g[g] + u_g[g]
                 acc_t_g[g] = acc_t_g[g] + t_g[g]
-                acc_B[g] = acc_B[g] + B[g]    
+                for q in data.questions.iterkeys():
+                    acc_B[g][q] = acc_B[g][q] + B[g][q]
     
     acc_e = acc_e / float(samples)
     for h in data.handins.iterkeys():
@@ -273,11 +273,12 @@ def gibbs_model(data):
             acc_t_h[h][q] = acc_t_h[h][q] / float(samples)
             acc_T[h][q] = acc_T[h][q] / float(samples)
     for g in data.graders.iterkeys():
-
         acc_u_g[g] = acc_u_g[g] / float(samples)
         acc_t_g[g] = acc_t_g[g] / float(samples)
-        acc_B[g] = acc_B[g] / float(samples)
+        for q in data.questions.iterkeys():
+            acc_B[g][q] = acc_B[g][q] / float(samples)
     
+    print
     print "Wall time: %f" % (time.time() - tw)
 
     traces = {'e' : acc_e,
@@ -292,19 +293,15 @@ def gibbs_model(data):
 
 #######
 
-a1 = data_model.Assignment.objects.get(title="UNIX, Python and Fast Data")
+a1 = data_model.Assignment.objects.get(title="Your Choice of Subject")
 
 a1_data = fetch_assignment_data(a1)
 
 a1_result = gibbs_model(a1_data)
 
-print 1.0 / a1_result['e']
+#print 1.0 / a1_result['e']
 
-for h, handin in a1_data.handins.iteritems():
-    for q in handin.answers.iterkeys():
-        print q, a1_result['T'][h][q]
-    break
-
-#plot_bias(a1_data,a1_result)
-
-#plot_handin_score(a1_data,a1_result)
+#for h, handin in a1_data.handins.iteritems():
+#    for q in handin.answers.iterkeys():
+#        print q, a1_result['T'][h][q]
+#    break
