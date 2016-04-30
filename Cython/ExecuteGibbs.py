@@ -109,7 +109,7 @@ for i in xrange(0,100):
     tau = np.random.gamma(50.0,1.0/0.1)
     g = Grader('%i' % i,mu,tau)
     graders_data.append(g)
-for i in xrange(0,100):
+for i in xrange(0,20):
     t_mu = random_limit(np.random.normal,0.5,np.sqrt(1.0/25.0))
     t_tau = np.random.gamma(10,np.sqrt(1.0/0.1))
     h = Handin('%i' % i, graders_data[i], t_mu, t_tau)
@@ -119,42 +119,42 @@ assignment_data = Assignment(handins_data,graders_data)
 assignment_data.grade_handins(5)
 course.add_assignment(assignment_data)
 
-handins_data = list()
-
-for i in xrange(100,200):
-    t_mu = random_limit(np.random.normal,0.5,np.sqrt(1.0/25.0))
-    t_tau = np.random.gamma(10,np.sqrt(1.0/0.1))
-    h = Handin('%i' % i, graders_data[i-100], t_mu, t_tau)
-    handins_data.append(h)
+#handins_data = list()
+#
+#for i in xrange(100,200):
+#    t_mu = random_limit(np.random.normal,0.5,np.sqrt(1.0/25.0))
+#    t_tau = np.random.gamma(10,np.sqrt(1.0/0.1))
+#    h = Handin('%i' % i, graders_data[i-100], t_mu, t_tau)
+#    handins_data.append(h)
     
-assignment_data_2 = Assignment(handins_data,graders_data)
-assignment_data_2.grade_handins(5)
-course.add_assignment(assignment_data_2)
+#assignment_data_2 = Assignment(handins_data,graders_data)
+#assignment_data_2.grade_handins(5)
+#course.add_assignment(assignment_data_2)
 
-handins_data = list()
+#handins_data = list()
 
-for i in xrange(200,300):
-    t_mu = random_limit(np.random.normal,0.5,np.sqrt(1.0/25.0))
-    t_tau = np.random.gamma(10,np.sqrt(1.0/0.1))
-    h = Handin('%i' % i, graders_data[i-300], t_mu, t_tau)
-    handins_data.append(h)
+#for i in xrange(200,300):
+#    t_mu = random_limit(np.random.normal,0.5,np.sqrt(1.0/25.0))
+#    t_tau = np.random.gamma(10,np.sqrt(1.0/0.1))
+#    h = Handin('%i' % i, graders_data[i-300], t_mu, t_tau)
+#    handins_data.append(h)
     
-assignment_data_3 = Assignment(handins_data,graders_data)
-assignment_data_3.grade_handins(5)
-course.add_assignment(assignment_data_3)
+#assignment_data_3 = Assignment(handins_data,graders_data)
+#assignment_data_3.grade_handins(5)
+#course.add_assignment(assignment_data_3)
 
-for i in xrange(300,400):
-    t_mu = random_limit(np.random.normal,0.5,np.sqrt(1.0/25.0))
-    t_tau = np.random.gamma(10,np.sqrt(1.0/0.1))
-    h = Handin('%i' % i, graders_data[i-400], t_mu, t_tau)
-    handins_data.append(h)
+#for i in xrange(300,400):
+#    t_mu = random_limit(np.random.normal,0.5,np.sqrt(1.0/25.0))
+#    t_tau = np.random.gamma(10,np.sqrt(1.0/0.1))
+#    h = Handin('%i' % i, graders_data[i-400], t_mu, t_tau)
+#    handins_data.append(h)
     
-assignment_data_4 = Assignment(handins_data,graders_data)
-assignment_data_4.grade_handins(5)
-course.add_assignment(assignment_data_4)
+#assignment_data_4 = Assignment(handins_data,graders_data)
+#assignment_data_4.grade_handins(5)
+#course.add_assignment(assignment_data_4)
 
 tw = time.time()
 
-traces = GibbsCython.gibbs_model(course,5000,1000)
+traces = GibbsCython.gibbs_model(course,1000,0)
 
 print "Wall time: %f" % (time.time() - tw)
