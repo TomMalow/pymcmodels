@@ -6,6 +6,7 @@ class Grader_(object):
     def __init__(self, id):
         self.id = id
         self.handins = list()
+
     def set_bias(self, mean, precision):
         self.mean = mean
         self.precision = precision
@@ -24,23 +25,62 @@ class Grader_(object):
 class Question_(object):
     def __init__(self,id):
         self.id = id
+
+class Answer_(object):
+    def __init__(self,question,grader,value):
+        self.question = question
+        self.grader = grader
+        self.value = value
         
+    def set_mock_value(self,mean,precision):
+        self.mean = mean
+        self.precision = precision
+
+    def set_mock_score(self,score):
+        self.valeu = score
+    
+    def get_score(self):
+        return np.random.normal(self.mean,np.sqrt(1.0/self.precision))
+
+class Gradeings_(object):
+    def __init__(self,grader):
+        self.grader = grader
+        self.answers = dict()
+
+    def add_answer(self,question,answer):
+        self.answer[question] = value
+
+    def set_answers_scores(self):
+        for answer in self.answers.itervalues():
+            h_mu = np.random.normal(0.5,tau_std(25))
+            answer.set_mock_value(h_mu,np.random.gamma(10,1.0/ 0.1))
+
+    def add_mock_gradeing(self,question,grader,n_v):
+        a = Answer_(question,grader,0)
+        h_mu = np.random.normal(0.5,tau_std(25))
+        while h_mu > 1 or h_mu < 0:
+            h_mu = np.random.normal(0.5,tau_std(25))
+        a.set_mock_value(h_mu,np.random.gamma(10,1.0/ 0.1))
+
+        mock_score = np.random.normal(a.get_score()+grader.get_bias(),np.sqrt(1.0/n_v))
+        a.set_mock_score(mock_score)
+        self.answers[question.id] = a
+
 class Handin_(object):
     def __init__(self,id,owner):
         self.id = id
         self.owner = owner
-        self.answers = defaultdict(dict)
+        self.gradeings = dict()
         self.graders = list()
         
     def set_answers(self,question,grader,answers):
         for answer in answers:
-            self.answers[question.id][grader.id] = answer
-    
+            self.gradeing[grader.id].add_answer(question.id,value)
+        
     def set_answers_scores(self):
-        for answer in self.answers.itervalues():
-            h_mu = np.random.normal(0.5,tau_std(25))
-            answer.set_mock_score(h_mu,np.random.gamma(10,1.0/ 0.1))
-            
+        for gradeing in self.gradeings.itervalues():
+            gradeing.set_answers_scores()
+
     def add_grader(self,grader):
         self.graders.append(grader)
         
@@ -56,6 +96,11 @@ class Handin_(object):
                 graders_answers[g].append((q,value))
             
         return graders_answers
+
+    def add_mock_gradeing(self,question,grader,n_v):
+        if grader.id not in self.gradeings:
+            self.gradeings[grader.id] = Gradeings_(grader)
+        self.gradeings[grader.id].add_mock_gradeing(question,grader,n_v)
         
     def get_grader_answers(self,grader):
         grader_answers = list()
@@ -63,9 +108,6 @@ class Handin_(object):
             grader_answers.append((key,values[grader]))
             
         return grader_answers
-    
-    def add_mock_gradeing(self,question,grader,n_v):
-        self.answers[question.id][grader.id] = 0.5
 
 class Assignment_(object):
     
@@ -177,11 +219,11 @@ def gibbs_model(data, samples, burn_in=0):
         print "\r%i" % (r+1) + " out of %i" % (burn_in + samples),
         # Sample T
         for h, handin in data.handins.iteritems():
-            for q, answer in handin.answers.iteritems():
-                n_gradings = len(answer)
+            for g, grade in handin.gradeings.iteritems():
+                n_gradings = len(grade.answers)
                 sum_ = 0.0
-                for g, val in answer.iteritems():
-                    sum_ = sum_ + val - B[g][q]
+                for q, val in grade.answers.iteritems():
+                    sum_ = sum_ + val.value - B[g][q]
                 v = n_v*n_gradings+t_h[h]
                 T[h][q] = np.random.normal((u_h[h]*t_h[h]+n_v*sum_)/v,np.sqrt(1.0/v))
             
@@ -191,7 +233,7 @@ def gibbs_model(data, samples, burn_in=0):
                 n_gradings = len(grader.handins)
                 sum_ = 0.0
                 for h in grader.handins:
-                    sum_ = sum_ + h.answers[q][g] - T[h.id][q]
+                    sum_ = sum_ + h.gradeings[g].answers[q].value - T[h.id][q]
                 v = n_v * n_gradings + t_g[g]
                 B[g][q] = np.random.normal((u_g[g]*t_g[g]+n_v*sum_)/v,np.sqrt(1.0/v))
         
@@ -199,16 +241,18 @@ def gibbs_model(data, samples, burn_in=0):
         sum_ = 0.0
         n_eval = 0
         for h, handin in data.handins.iteritems():
-            for q, answers in handin.answers.iteritems():
-                for g, answer_val in answers.iteritems():
+            for g, grade in handin.gradeings.iteritems():
+                for q, answer in grade.answers.iteritems():
                     n_eval = n_eval + 1
-                    sum_ = sum_ + np.square(answer_val - (T[h][q]+B[g][q]))
+                    sum_ = sum_ + np.square(answer.value - (T[h][q]+B[g][q]))
         n_v = np.random.gamma(al_n+0.5*n_eval,1.0 / (be_n+0.5*sum_))
 
         # Sample u_q and t_q
         for h in data.handins.iterkeys():
             la_ = (la_h+N_Q)
-            sum_q = np.sum(T[h].values())
+            sum_q = 0.0
+            for q in data.questions.iterkeys():
+                sum_q = sum_q = T[h][q]
             mean_q = sum_q / N_Q
             sum_minus = 0.0
             for q in data.questions.iterkeys():
@@ -221,7 +265,9 @@ def gibbs_model(data, samples, burn_in=0):
         # Sample u_g and t_g
         for g in data.graders.iterkeys():
             la_ = (la_g+N_Q)
-            sum_q = np.sum(B[g].values())
+            sum_q = 0.0
+            for q in data.questions.iterkeys():
+                sum_q = sum_q + B[g][q]
             mean_q = sum_q / N_Q
             sum_minus = 0.0
             for q in data.questions.iterkeys():
@@ -266,8 +312,8 @@ graders_data = list()
 questions_data = list()
 answers_data = list()
 
-graders = 100
-questions = 10
+graders = 60
+questions = 20
 gradings = 5
 
 for i in xrange(questions):
@@ -285,4 +331,4 @@ for i in xrange(graders):
 mock_data = Assignment_(handins_data,graders_data,questions_data,graders*gradings)
 mock_data.grade_mock_handins(gradings,np.random.gamma(50,1.0 / 0.1))
 
-mock_result = gibbs_model(mock_data,1000)
+mock_result = gibbs_model(mock_data,0,1000)

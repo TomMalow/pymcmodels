@@ -251,7 +251,9 @@ def gibbs_model(data, samples, burn_in=0):
         # Sample u_q and t_q
         for h in data.handins.iterkeys():
             la_ = (la_h+N_Q)
-            sum_h = np.sum(T[h].values())
+            sum_h = 0.0
+            for q in data.questions.iterkeys():
+                sum_h = sum_h = T[h][q]
             mean_h = sum_h / N_Q
             sum_minus = 0.0
             for q in data.questions.iterkeys():
@@ -264,7 +266,9 @@ def gibbs_model(data, samples, burn_in=0):
         # Sample u_g and t_g
         for g in data.graders.iterkeys():
             la_ = (la_g+N_Q)
-            sum_q = np.sum(B[g].values())
+            sum_q = 0.0
+            for q in data.questions.iterkeys():
+                sum_q = sum_q + B[g][q]
             mean_q = sum_q / N_Q
             sum_minus = 0.0
             for q in data.questions.iterkeys():
