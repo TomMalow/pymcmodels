@@ -253,7 +253,7 @@ def gibbs_model(data, samples, burn_in=0):
             la_ = (la_h+N_Q)
             sum_h = 0.0
             for q in data.questions.iterkeys():
-                sum_h = sum_h = T[h][q]
+                sum_h = sum_h + T[h][q]
             mean_h = sum_h / N_Q
             sum_minus = 0.0
             for q in data.questions.iterkeys():
