@@ -115,8 +115,6 @@ def fetch_assignment_data(ass_obj):
     Takes an course and assignment data model object and transforms it into populated Assignment object
     Only student or all?
     '''
-
-    print ass_obj.id
     
     ## Make dictionary to hold all the graders who have graded a handin
     graders = dict()
