@@ -4,6 +4,7 @@ import time
 import math
 from collections import defaultdict
 import numpy as np
+#import pymc as pm
 
 def tau_std(value):
     return np.sqrt(1.0 / value)
@@ -85,17 +86,17 @@ class Handin_(object):
             
         return graders_answers
         
-    def get_grader_answers(self,grader):
+    def get_grader_answers(self, grader):
         grader_answers = list()
         for key, answer in self.gradeings.iteritems():
-            grader_answers.append((key,answer.answers[grader]))
+            grader_answers.append((key, answer.answers[grader]))
         return grader_answers
     
-    def get_handin_score(self,g):
+    def get_handin_score(self, g):
         if g not in self.catched_score:
             grader_g = list()
             for answers in self.gradeings.itervalues():
-                if g not in  answers.answers:
+                if g not in answers.answers:
                     return None
                 grader_g.append(answers.answers[g])
             self.catched_score[g] = np.mean(grader_g)
@@ -141,19 +142,30 @@ class Assignment_(object):
     def set_questions(self, questions):
         self.questions = list(questions)
         
-    def grade_mock_handins(self,n_gradings,n_v):
+    def grade_mock_handins(self, n_gradings, n_v):
         self.n_gradings = n_gradings
         # Distribute handins
-        for i in xrange(0,n_gradings):
+        for i in xrange(n_gradings):
             for grader in self.graders.itervalues():
-                h = self.find_ungraded_handin(grader)
-                h.add_grader(grader)
-                grader.add_handin(h)
+            #for handin in self.handins.itervalues():
+                #grader = self.find_grader_for_grading(handin)
+                handin = self.find_ungraded_handin(grader)
+                handin.add_grader(grader)
+                grader.add_handin(handin)
         
         # grade handins
         for grader in self.graders.itervalues():
-            grader.grade_handins(self.questions,n_v)
-            
+            grader.grade_handins(self.questions, n_v)
+    
+    def find_grader_for_grading(self, handin):
+        sorted_l = sorted(self.graders.values(), key=lambda x: len(x.handins))
+        i = 0
+        grader = sorted_l[i]
+        while grader in handin.graders or handin.owner.id == grader.id:
+            grader = sorted_l[i]
+            i += 1
+        return grader
+
     def find_ungraded_handin(self, grader):
         
         # sort the handins by the one with the least
@@ -204,6 +216,42 @@ def answeres_handin(report_grade):
             result.append((answer,answer_value(answer)))
     return result
 
+# def PyMC_peergrade_model(data,samples,burn_in=0):
+    
+#     # Initialize Containers for posterior
+#     mu_h = dict()
+#     tau_h = dict()
+#     mu_g = dict()
+#     tau_g = dict()
+#     O = list()
+
+#     for h_id, handin in data.handins.iteritems():
+        
+#         mu_h[h_id] = pm.Normal('mu_h_%s' % str(h_id), 0.5, 25)
+#         tau_h[h_id] = pm.Gamma('tau_h_%s' % str(h_id), 10, 0.1)
+        
+#         for g in handin.graders:
+#             val = handin.get_handin_score(g.id)
+            
+#             if g.id not in mu_g:
+#                 mu_g[g.id] = pm.Normal('mu_g_%s' % str(g.id), 0, 100)
+#                 tau_g[g.id] = pm.Gamma('tau_g_%s' % str(g.id), 50, 0.1)
+                
+#             O.append(pm.Normal('O_%s_%s' % (h_id, g.id),
+#                                mu=mu_h[h_id] + mu_g[g.id],
+#                                tau=tau_h[h_id] + tau_g[g.id],
+#                                observed=True, value=val))
+               
+#     collection = [pm.Container(mu_g), pm.Container(tau_g),
+#                   pm.Container(mu_h), pm.Container(tau_h),
+#                   pm.Container(O)]
+    
+#     model = pm.Model(collection)
+#     mcmc = pm.MCMC(model)
+#     tw = time.time()
+#     mcmc.sample(samples, burn_in, progress_bar=False)
+#     print "Wall time: %f" % (time.time() - tw)
+#     return mcmc
 
 def norm_log_pdf(x,u,t):
     return -0.5*t*(x-u)**2+np.log(t)-np.log(np.sqrt(2.0*math.pi))
@@ -334,37 +382,55 @@ def MH_model(data,samples,burn_in=0):
     return traces
 
 def gibbs_model(data, samples, burn_in=0):
-        
-    # Hyperparameters    
+    
+    # Counts
+    N_H = len(data.handins) # Number of handins
+    N_G = len(data.graders) # Number of graders
+    N_Q = len(data.questions) # Number of graders
+    N_g = data.n_gradings   # Number of gradings
+    N_eval = N_g*N_G   # Number of evaluations in total
+    
+    # Hyperparameters
+    ga_h = 0.5
+    la_h = 1.0
+    al_h = 10.0
+    be_h = 0.1
+
+    ga_g = 0.0
+    la_g = 1.0
+    al_g = 50.0
+    be_g = 0.1
+    
     al_n = 10.0
     be_n = 1.0
-    
-    u_g = 0.0
-    t_g = 200.0
-    u_h = 0.5
-    t_h = 500.0
-
-    # Gibbs sampling #    
-    # Tracers initialising
-    acc_e = list()
-    acc_T = defaultdict(list)
-    acc_B = defaultdict(list)
-
+        
     # Prior parameters
+    u_h = dict()
+    t_h = dict()
+    u_g = dict()
+    t_g = dict()
     T = dict()
     B = dict()
 
     # Draw from priors
     n_v = np.random.gamma(al_n,1.0/be_n)
     for h in data.handins.iterkeys():
-        T[h] = np.random.normal(u_h,np.sqrt(1.0/t_h))
+        t_h[h] = np.random.gamma(al_h,1.0/be_h)
+        u_h[h] = np.random.normal(ga_h,np.sqrt(1.0/(la_h * t_h[h])))
+        T[h] = np.random.normal(u_h[h],np.sqrt(1.0/t_h[h]))
     for g in data.graders.iterkeys():
-        B[g] = np.random.normal(u_g,np.sqrt(1.0/t_g))
+        t_g[g] = np.random.gamma(al_g,1.0/be_g)
+        u_g[g] = np.random.normal(ga_g,np.sqrt(1.0/(la_g * t_g[g])))
+        B[g] = np.random.normal(u_g[g],np.sqrt(1.0/t_g[g]))
             
     # Gibbs sampling #
     
     # Tracers initialising
     acc_n_v = list()
+    acc_u_h = defaultdict(list)
+    acc_t_h = defaultdict(list)
+    acc_u_g = defaultdict(list)
+    acc_t_g = defaultdict(list)
     acc_T = defaultdict(list)
     acc_B = defaultdict(list)
 
@@ -374,45 +440,78 @@ def gibbs_model(data, samples, burn_in=0):
         
         # Sample T
         for h, handin in data.handins.iteritems():
-            n_gradings = len(handin.graders)
+            n_gradings = 0.0
             sum_ = 0.0
             for g in handin.graders:
-                sum_ = sum_ + handin.get_handin_score(g.id) - B[g.id]
-            v = n_v*n_gradings+t_h
-            T[h] = np.random.normal((u_h*t_h+n_v*sum_)/v,np.sqrt(1.0/v))
+                val = handin.get_handin_score(g.id)
+                if val <> None:
+                    n_gradings = n_gradings + 1.0
+                    sum_ = sum_ + val - B[g.id]
+            v = n_v*n_gradings+t_h[h]
+            T[h] = np.random.normal((u_h[h]*t_h[h]+n_v*sum_)/v,np.sqrt(1.0/v))
 
         # Sample B
         for g, grader in data.graders.iteritems():
-            n_gradings = len(grader.handins)
+            n_gradings = 0.0
             sum_ = 0.0
-            for h in grader.handins:
-                sum_ = sum_ + h.get_handin_score(g) - T[h.id]
-            v = n_v*n_gradings+t_g
-            B[g] = np.random.normal((u_g*t_g+n_v*sum_)/v,np.sqrt(1.0/v))
+            for handin in grader.handins:
+                val = handin.get_handin_score(g)
+                if val <> None:
+                    n_gradings = n_gradings + 1.0
+                    sum_ = sum_ + val - T[handin.id]
+            v = n_v*n_gradings+t_g[g]
+            B[g] = np.random.normal((u_g[g]*t_g[g]+n_v*sum_)/v,np.sqrt(1.0/v))
 
         # Sample e
         sum_ = 0.0
         n_eval = 0
         for h, handin in data.handins.iteritems():
             for grader in handin.graders:
-                n_eval = n_eval + 1
-                sum_ = sum_ + np.square(handin.get_handin_score(grader.id) - (T[h]+B[grader.id]))
+                val = handin.get_handin_score(grader.id)
+                if val <> None:
+                    n_eval = n_eval + 1
+                    sum_ = sum_ + np.square(val - (T[h]+B[grader.id]))
         n_v = np.random.gamma(al_n+0.5*n_eval,1.0 / (be_n+0.5*sum_))
+
+        # Sample u_h and t_h
+        for h in data.handins.iterkeys():
+            la_ = (la_h+1.0)
+            al_ = al_h+0.5
+            be_ = be_h+0.5*((la_h*np.square(T[h]-ga_h))/la_)
+            t_h[h] = np.random.gamma(al_,1.0/be_)
+            u_h[h] = np.random.normal((la_h*ga_h+T[h])/la_,np.sqrt(1.0 / (la_*t_h[h])))
+
+        
+        # Sample u_g and t_g
+        for g in data.graders.iterkeys():
+            la_ = (la_g+1.0)
+            al_ = al_g+0.5
+            be_ = be_g+0.5*((la_g*np.square(B[g]-ga_g))/la_)
+            t_g[g] = np.random.gamma(al_,1.0/be_)
+            u_g[g] = np.random.normal((la_g*ga_g+B[g])/la_,np.sqrt(1.0 / (la_*t_g[g])))
                         
         # Collect tracings
         if r > burn_in:
             acc_n_v.append(n_v)
             for h in data.handins.iterkeys():
+                acc_u_h[h].append(u_h[h])
+                acc_t_h[h].append(t_h[h])
                 acc_T[h].append(T[h])
             for g in data.graders.iterkeys():
+                acc_u_g[g].append(u_g[g])
+                acc_t_g[g].append(t_g[g]) 
                 acc_B[g].append(B[g])
                     
     print
     print "Wall time: %f" % (time.time() - tw)
     
     traces = {'n_v' : acc_n_v,
-              'u_h' : acc_T,
-              'u_g' : acc_B}
+              'u_h' : acc_u_h,
+              't_h' : acc_t_h,
+              'u_g' : acc_u_g,
+              't_g' : acc_t_g,
+              'T' : acc_T,
+              'B' : acc_B}
 
     return traces
 
@@ -561,16 +660,19 @@ def gibbs_ext_model(data, samples, burn_in=0):
               'B' : acc_B}
 
     return traces
+g_b = list()
 g_e_b = list()
 mh_b = list()
+g_s = list()
 g_e_s = list()
 mh_s = list()
 obs_s = list()
 
-graders = 20
-questions = 10
-gradings = 10
+graders = 50
+questions = 5
+gradings = 5
 
+print "Graders: %i" % graders
 print "Gradings: %i" % gradings
 print "Questions: %i" % questions 
 
@@ -587,7 +689,7 @@ for j in range(3):
 
     for i in xrange(graders):
         g = Grader_('grader_%i' % i)
-        g.set_bias(np.random.normal(0,tau_std(100)),np.random.gamma(50,1.0 / 0.1))
+        g.set_bias(np.random.normal(0,tau_std(100)),np.random.gamma(50, 1.0 / 0.1))
         h = Handin_('handin_%i' % i, g)
         h.set_answers_scores()
         graders_data.append(g)
@@ -605,6 +707,9 @@ for j in range(3):
     print "MH"
     mock_MH_result = MH_model(mock_data,1000,0)
 
+    #print "PymC"
+    #mock_MH_result = PyMC_peergrade_model(mock_data,1000,0)
+
     def MSE(true,estimated):
         return np.mean(map(lambda x : (x[0] - x[1])**2,zip(true,estimated)))
 
@@ -618,23 +723,25 @@ for j in range(3):
         for id, g in t.handins.iteritems():
             text = id
             val = list()
-            for (name,data) in results:
+            for (name, data) in results:
                 val.append(np.mean(data['u_h'][id]))
             obs_scores = list()
             for grader in t.handins[id].graders:
-                obs_scores.extend(map(lambda x : x[1],t.handins[id].get_grader_answers(grader.id)))
-            scores.append((text,val,np.mean(data['u_h'][id]),t.handins[id].mean,obs_scores))
-        scores.sort(key=lambda x:x[3]) 
+                obs_scores.extend(map(lambda x: x[1], t.handins[id].get_grader_answers(grader.id)))
+            scores.append((text, val, np.mean(data['u_h'][id]), t.handins[id].mean, obs_scores))
+        scores.sort(key=lambda x: x[3]) 
 
         true_score = map(lambda x : x[3],scores)
 
         for i in xrange(len(results)):
             x = map(lambda x : x[1][i],scores)
             #print "MSE %s: %f" % (labels[i], MSE(true_score,x))
-            if i == 0:
+            if labels[i] == "Ext. Gibbs":
                 g_e_s.append(MSE(true_score,x))
-            elif i == 1:
+            elif labels[i] == "MH":
                 mh_s.append(MSE(true_score,x))
+            elif labels[i] == "Gibbs":
+                g_s.append(MSE(true_score,x))
 
         obs_score = map(lambda x : x[4],scores)
         #print "MSE %s: %f" % ("Observed average score", MSE(true_score,map(lambda x : np.mean(x),obs_score)))
@@ -661,22 +768,26 @@ for j in range(3):
         for i in xrange(len(results)):
             x = map(lambda x : x[1][i],scores)
             #print "MSE %s: %f" % (labels[i], MSE(true_bias,x))
-            if i == 0:
+            if labels[i] == "Ext. Gibbs":
                 g_e_b.append(MSE(true_bias,x))
-            elif i == 1:
+            elif labels[i] == "MH":
                 mh_b.append(MSE(true_bias,x))
+            elif labels[i] == "Gibbs":
+                g_b.append(MSE(true_bias,x))
 
-    #print "Bias:"
-    #plot_bias(mock_data,[("Ext. Gibbs",mock_gibbs_ext_result),("Gibbs",mock_gibbs_result),("MH",mock_MH_result)],nth=4)
-    #print "Handin scores:"
-    #plot_handins(mock_data,[("Ext. Gibbs",mock_gibbs_ext_result),("Gibbs",mock_gibbs_result),("MH",mock_MH_result)],nth=4)
+#     print "Bias:"
+#     plot_bias(mock_data,[("Ext. Gibbs",mock_gibbs_ext_result),("Gibbs",mock_gibbs_result),("MH",mock_MH_result)],nth=4)
+#     print "Handin scores:"
+#     plot_handins(mock_data,[("Ext. Gibbs",mock_gibbs_ext_result),("Gibbs",mock_gibbs_result),("MH",mock_MH_result)],nth=4)
 
-#print "Bias:"
-#print "Gibbs [" + ",".join(map(str,g_e_b)) + "]"
-#print "MH [" + ",".join(map(str,mh_b)) + "]"
+# print "Bias:"
+# print "Ext. Gibbs [" + ",".join(map(str,g_e_b)) + "]"
+# print "Gibbs [" + ",".join(map(str,g_b)) + "]"
+# print "MH [" + ",".join(map(str,mh_b)) + "]"
 
-#print "Handin scores:"
+# print "Handin scores:"
 
-#print "Gibbs [" + ",".join(map(str,g_e_s)) + "]"
-#print "MH [" + ",".join(map(str,mh_s)) + "]"
-#print "Obs [" + ",".join(map(str,obs_s)) + "]"
+# print "Ext. Gibbs [" + ",".join(map(str,g_e_s)) + "]"
+# print "Gibbs [" + ",".join(map(str,g_s)) + "]"
+# print "MH [" + ",".join(map(str,mh_s)) + "]"
+# print "Obs [" + ",".join(map(str,obs_s)) + "]"
