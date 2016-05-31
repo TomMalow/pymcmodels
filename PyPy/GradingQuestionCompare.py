@@ -669,14 +669,14 @@ mh_s = list()
 obs_s = list()
 
 graders = 50
-questions = 5
-gradings = 5
+questions = 10
+gradings = 1
 
 print "Graders: %i" % graders
 print "Gradings: %i" % gradings
 print "Questions: %i" % questions 
 
-for j in range(3):
+for j in range(5):
 
     handins_data = list()
     graders_data = list()
@@ -775,19 +775,19 @@ for j in range(3):
             elif labels[i] == "Gibbs":
                 g_b.append(MSE(true_bias,x))
 
-#     print "Bias:"
-#     plot_bias(mock_data,[("Ext. Gibbs",mock_gibbs_ext_result),("Gibbs",mock_gibbs_result),("MH",mock_MH_result)],nth=4)
-#     print "Handin scores:"
-#     plot_handins(mock_data,[("Ext. Gibbs",mock_gibbs_ext_result),("Gibbs",mock_gibbs_result),("MH",mock_MH_result)],nth=4)
+    print "Bias:"
+    plot_bias(mock_data,[("Ext. Gibbs",mock_gibbs_ext_result),("Gibbs",mock_gibbs_result),("MH",mock_MH_result)],nth=4)
+    print "Handin scores:"
+    plot_handins(mock_data,[("Ext. Gibbs",mock_gibbs_ext_result),("Gibbs",mock_gibbs_result),("MH",mock_MH_result)],nth=4)
 
-# print "Bias:"
-# print "Ext. Gibbs [" + ",".join(map(str,g_e_b)) + "]"
-# print "Gibbs [" + ",".join(map(str,g_b)) + "]"
-# print "MH [" + ",".join(map(str,mh_b)) + "]"
+print "Bias:"
+print "Ext. Gibbs [" + ",".join(map(str,g_e_b)) + "]"
+print "Gibbs [" + ",".join(map(str,g_b)) + "]"
+print "MH [" + ",".join(map(str,mh_b)) + "]"
 
-# print "Handin scores:"
+print "Handin scores:"
 
-# print "Ext. Gibbs [" + ",".join(map(str,g_e_s)) + "]"
-# print "Gibbs [" + ",".join(map(str,g_s)) + "]"
-# print "MH [" + ",".join(map(str,mh_s)) + "]"
-# print "Obs [" + ",".join(map(str,obs_s)) + "]"
+print "Ext. Gibbs [" + ",".join(map(str,g_e_s)) + "]"
+print "Gibbs [" + ",".join(map(str,g_s)) + "]"
+print "MH [" + ",".join(map(str,mh_s)) + "]"
+print "Obs [" + ",".join(map(str,obs_s)) + "]"
