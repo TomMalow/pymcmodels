@@ -52,7 +52,7 @@ class Handin_(object):
     def __init__(self,id,owner):
         self.id = id
         self.owner = owner
-        self.gradeings = dict()
+        self.gradings = dict()
         self.graders = list()
         self.catched_score = dict()
         self.precision = np.random.gamma(10,1.0/ 0.1)
@@ -63,7 +63,7 @@ class Handin_(object):
         self.mean = h_mu
             
     def set_answers_scores(self):
-        for gradeings in self.gradeings.itervalues():
+        for gradings in self.gradings.itervalues():
             while 1:
                 h_mu = np.random.normal(self.mean,tau_std(20.0))
                 if h_mu < 1.0 and h_mu > 0.0:
@@ -74,13 +74,13 @@ class Handin_(object):
         self.graders.append(grader)
         
     def add_answer(self,grader,question,value):
-        if str(question.id) not in self.gradeings:
-            self.gradeings[str(question.id)] = Answers_(self,grader)
-        self.gradeings[str(question.id)].answers[str(grader.id)] = value
+        if str(question.id) not in self.gradings:
+            self.gradings[str(question.id)] = Answers_(self,grader)
+        self.gradings[str(question.id)].answers[str(grader.id)] = value
         
     def get_graders_answers(self):
         graders_answers = defaultdict(list)
-        for q, answer in self.gradeings.iteritems():
+        for q, answer in self.gradings.iteritems():
             for g, value in answer.answers.iteritems():
                 graders_answers[str(g)].append((str(q),value))
             
@@ -88,14 +88,14 @@ class Handin_(object):
         
     def get_grader_answers(self, grader):
         grader_answers = list()
-        for key, answer in self.gradeings.iteritems():
+        for key, answer in self.gradings.iteritems():
             grader_answers.append((key, answer.answers[grader]))
         return grader_answers
     
     def get_handin_score(self, g):
         if g not in self.catched_score:
             grader_g = list()
-            for answers in self.gradeings.itervalues():
+            for answers in self.gradings.itervalues():
                 if g not in answers.answers:
                     return None
                 grader_g.append(answers.answers[g])
@@ -104,15 +104,15 @@ class Handin_(object):
         return self.catched_score[g]
     
     def add_mock_gradeing(self,question,grader,n_v):
-        if question.id not in self.gradeings:
+        if question.id not in self.gradings:
             a = Answers_(self,question)
             while 1:
                 a_mu = np.random.normal(self.mean,tau_std(self.precision))
                 if a_mu < 1.0 and a_mu > 0.0:
                     break
             a.set_mock_value(a_mu,np.random.gamma(100,1.0/ 0.1))
-            self.gradeings[str(question.id)] = a
-        a = self.gradeings[str(question.id)]
+            self.gradings[str(question.id)] = a
+        a = self.gradings[str(question.id)]
         while 1:
             mock_value = np.random.normal(a.get_score()+grader.get_bias(),tau_std(n_v))
 #            if mock_value < 1.0 and mock_value > 0.0:
@@ -253,22 +253,33 @@ def answeres_handin(report_grade):
 #     print "Wall time: %f" % (time.time() - tw)
 #     return mcmc
 
-def norm_log_pdf(x,u,t):
-    return -0.5*t*(x-u)**2+np.log(t)-np.log(np.sqrt(2.0*math.pi))
+# Log Probabiliy density functions used in Metropolis Hasting
+def norm_log_pdf(x, mu, tau):
+    '''Normal Log Probability density function'''
+    return -0.5 * tau * (x - mu) ** 2 + np.log(tau) \
+        - np.log(np.sqrt(2.0 * math.pi))
 
-def gamma_log_pdf(x,a,b):
-    return a*np.log(b)-np.log(math.gamma(a))+(a-1.0)*np.log(x)-b*x
+def gamma_log_pdf(x, al, be):
+    '''Gamma log Probability density function'''
+    return al * np.log(be) - np.log(math.gamma(al)) + (al - 1.0) \
+        * np.log(x) - be * x
 
-def norm_gamma_log_pdf(u,t,ga,la,a,b):
-    return a*np.log(b)+np.log(np.sqrt(la))-np.log(math.gamma(a))-np.log(np.sqrt(2.0*math.pi))+(a-1)*np.log(t)-np.log(b*t)-0.5*t*la*(u-ga)**2
+def norm_gamma_log_pdf(mu, tau, ga, la, al, be):
+    '''Normal-Gamma Log Probability density function'''
+    return al * np.log(be) + np.log(np.sqrt(la)) \
+        - np.log(math.gamma(al)) - np.log(np.sqrt(2.0 * math.pi)) \
+        + (al - 1) * np.log(tau) - np.log(be * tau) - 0.5 \
+        * tau * la * (mu - ga) ** 2
 
-def MH_model(data,samples,burn_in=0):
+def MH_model(data, samples=1000, burn_in=0):
+    '''Performs Metropolis Hasting sampling on an assignment
+    object. Returns the found latent score for each hand-ins
+    and the bias of each grader
 
-    # Counts
-    N_H = len(data.handins) # Number of handins
-    N_G = len(data.graders) # Number of graders
-    N_g = data.n_gradings   # Number of gradings
-    N_eval = N_g*N_G   # Number of evaluations in total
+    Keyword arguments:
+    samples -- the number of samples to run
+    burn-in -- added perirod to burn-in the samples.
+    '''
     
     # Hyperparameters
     ga_h = 0.5
@@ -281,114 +292,121 @@ def MH_model(data,samples,burn_in=0):
     al_g = 50.0
     be_g = 0.1
     
-    al_e = 10.0
-    be_e = 1.0
-    t_h = 500.0
-    t_g = 100.0
+    tau_h = 500.0
+    tau_g = 100.0
     
     # Prior parameters
-    u_h = dict()
-    t_h = dict()
-    u_g = dict()
-    t_g = dict()
+    mu_h = dict()
+    tau_h = dict()
+    mu_g = dict()
+    tau_g = dict()
     
     log_h = dict()
     log_g = dict()
 
-    def prop_u_t_h(handin,u_h,t_h):
+    # Functions for finding probabilities
+    def prop_mu_tau_h(handin, _mu_h, _tau_h):
+        '''Finds the priobability of mu_h and tau_h given the priors'''
         sum_ = 0.0
         for g in handin.graders:
             val = handin.get_handin_score(g.id)
-            if val <> None:
-                sum_ = sum_ + norm_log_pdf(val,u_g[g.id]+u_h,t_g[g.id]+t_h)
-        return sum_ + norm_gamma_log_pdf(u_h,t_h,ga_h,la_h,al_h,be_h)
+            if val is not None:
+                sum_ = sum_ + norm_log_pdf(val, mu_g[g.id] + _mu_h,
+                                           tau_g[g.id] + _tau_h)
+        return sum_ + norm_gamma_log_pdf(_mu_h, _tau_h, ga_h, la_h,
+                                         al_h, be_h)
     
-    def prop_u_t_g(grader,g,u_g,t_g):
+    def prop_mu_tau_g(grader, _mu_g, _tau_g):
+        '''Finds the priobability of mu_g and tau_g given the priors'''
         sum_ = 0.0
         for h in grader.handins:
-            val = h.get_handin_score(g)
-            if val <> None:
-                sum_ = sum_ + norm_log_pdf(val,u_g+u_h[h.id],t_g+t_h[h.id])
-        return sum_ + norm_gamma_log_pdf(u_g,t_g,ga_g,la_g,al_g,be_g)
-
+            val = h.get_handin_score(grader.id)
+            if val is not None:
+                sum_ = sum_ + norm_log_pdf(val, _mu_g + mu_h[h.id],
+                                           _tau_g + tau_h[h.id])
+        return sum_ + norm_gamma_log_pdf(_mu_g, _tau_g, ga_g, la_g,
+                                         al_g, be_g)
     
     # Draw from priors
     for h in data.handins.iterkeys():
-        t_h[h] = np.random.gamma(al_h,1/be_h)
-        u_h[h] = np.random.normal(ga_h,np.sqrt(1/(la_g * t_h[h])))
+        tau_h[h] = np.random.gamma(al_h, 1 / be_h)
+        mu_h[h] = np.random.normal(ga_h, np.sqrt(1 / (la_g * tau_h[h])))
     for g in data.graders.iterkeys():
-        t_g[g] = np.random.gamma(al_g,1/be_g)
-        u_g[g] = np.random.normal(ga_g,np.sqrt(1/(la_g * t_g[g]))) 
-    # pre calcuate the liklyhood
+        tau_g[g] = np.random.gamma(al_g, 1 / be_g)
+        mu_g[g] = np.random.normal(ga_g, np.sqrt(1 / (la_g * tau_g[g])))
+
+    # Pre-calculate the likelihood
     for h, handin in data.handins.iteritems():
-        log_h[h] = prop_u_t_h(handin,u_h[h],t_h[h])
+        log_h[h] = prop_mu_tau_h(handin, mu_h[h], tau_h[h])
     for g, grader in data.graders.iteritems():
-        log_g[g] = prop_u_t_g(grader,g,u_g[g],t_g[g])
+        log_g[g] = prop_mu_tau_g(grader, mu_g[g], tau_g[g])
             
     # Tracers initialising
-    trace_u_h = defaultdict(list)
-    trace_t_h = defaultdict(list)
-    trace_u_g = defaultdict(list)
-    trace_t_g = defaultdict(list)
+    trace_mu_h = defaultdict(list)
+    trace_tau_h = defaultdict(list)
+    trace_mu_g = defaultdict(list)
+    trace_tau_g = defaultdict(list)
     
     tw = time.time()
-    for r in range(burn_in + samples):
-        print "\r%i" % (r+1) + " out of %i" % (burn_in + samples),
+    for step in range(burn_in + samples):
+        print "\r%i out of %i" % ((step + 1), (burn_in + samples)),
         
-        # Sample u_h and t_h
+        # Sample mu_h and tau_h
         for h, handin in data.handins.iteritems():
             # Propose new candidates
-            u_h_c = np.random.normal(u_h[h],0.1)
-            t_h_c = np.random.normal(t_h[h],0.1)
-            #draw from gamma
-            p_ = prop_u_t_h(handin,u_h_c,t_h_c)
-            alpha = min(1,p_-log_h[h])
+            mu_h_can = np.random.normal(mu_h[h], 0.1)
+            tau_h_can = np.random.normal(tau_h[h], 0.1)
+            # Find likelihood
+            p_ = prop_mu_tau_h(handin, mu_h_can, tau_h_can)
+            # Calculate acception rate
+            alpha = min(1, p_ - log_h[h])
             if np.log(np.random.random()) <= alpha:
-                u_h[h] = u_h_c
-                t_h[h] = t_h_c
+                mu_h[h] = mu_h_can
+                tau_h[h] = tau_h_can
                 log_h[h] = p_
                     
-        # Sample u_g and t_g
+        # Sample mu_g and tau_g
         for g, grader in data.graders.iteritems():
             # Propose new candidates
-            u_g_c = np.random.normal(u_g[g],0.1)
-            t_g_c = np.random.normal(t_g[g],0.1)
-            #draw from gamma
-            p_ = prop_u_t_g(grader,g,u_g_c,t_g_c)
-            alpha = min(1,p_-log_g[g])
+            mu_g_can = np.random.normal(mu_g[g], 0.1)
+            tau_g_can = np.random.normal(tau_g[g], 0.1)
+            # Find likelyhood
+            p_ = prop_mu_tau_g(grader, mu_g_can, tau_g_can)
+            # Calculate acception rate
+            alpha = min(1, p_ - log_g[g])
             if np.log(np.random.random()) <= alpha:
-                u_g[g] = u_g_c
-                t_g[g] = t_g_c    
+                mu_g[g] = mu_g_can
+                tau_g[g] = tau_g_can
                 log_g[g] = p_
 
         # Collect tracings
-        if r > burn_in:
+        if step > burn_in:
             for h in data.handins.iterkeys():
-                trace_u_h[h].append(u_h[h])
-                trace_t_h[h].append(t_h[h])
+                trace_mu_h[h].append(mu_h[h])
+                trace_tau_h[h].append(tau_h[h])
             for g in data.graders.iterkeys():
-                trace_u_g[g].append(u_g[g])
-                trace_t_g[g].append(t_g[g])
+                trace_mu_g[g].append(mu_g[g])
+                trace_tau_g[g].append(tau_g[g])
                 
     print
     print "Wall time: %f" % (time.time() - tw)
     
-    
-    traces = {'u_h' : trace_u_h,
-              't_h' : trace_t_h,
-              'u_g' : trace_u_g,
-              't_g' : trace_t_g}
+    traces = {'mu_h': trace_mu_h,
+              'tau_h': trace_tau_h,
+              'mu_g': trace_mu_g,
+              'tau_g': trace_tau_g}
 
     return traces
 
-def gibbs_model(data, samples, burn_in=0):
-    
-    # Counts
-    N_H = len(data.handins) # Number of handins
-    N_G = len(data.graders) # Number of graders
-    N_Q = len(data.questions) # Number of graders
-    N_g = data.n_gradings   # Number of gradings
-    N_eval = N_g*N_G   # Number of evaluations in total
+def gibbs_model(data, samples=1000, burn_in=0):
+    '''Performs Gibbs sampling on an assignment
+    object. Returns the found latent score for each hand-ins
+    and the bias of each grader
+
+    Keyword arguments:
+    samples -- the number of samples to run
+    burn-in -- added perirod to burn-in the samples.
+    '''
     
     # Hyperparameters
     ga_h = 0.5
@@ -405,38 +423,37 @@ def gibbs_model(data, samples, burn_in=0):
     be_n = 1.0
         
     # Prior parameters
-    u_h = dict()
-    t_h = dict()
-    u_g = dict()
-    t_g = dict()
+    mu_h = dict()
+    tau_h = dict()
+    mu_g = dict()
+    tau_g = dict()
     T = dict()
     B = dict()
 
     # Draw from priors
-    n_v = np.random.gamma(al_n,1.0/be_n)
-    for h in data.handins.iterkeys():
-        t_h[h] = np.random.gamma(al_h,1.0/be_h)
-        u_h[h] = np.random.normal(ga_h,np.sqrt(1.0/(la_h * t_h[h])))
-        T[h] = np.random.normal(u_h[h],np.sqrt(1.0/t_h[h]))
-    for g in data.graders.iterkeys():
-        t_g[g] = np.random.gamma(al_g,1.0/be_g)
-        u_g[g] = np.random.normal(ga_g,np.sqrt(1.0/(la_g * t_g[g])))
-        B[g] = np.random.normal(u_g[g],np.sqrt(1.0/t_g[g]))
-            
-    # Gibbs sampling #
+    n_v = np.random.gamma(al_n, 1.0 / be_n)
+    for h_id in data.handins.iterkeys():
+        tau_h[h_id] = np.random.gamma(al_h, 1.0 / be_h)
+        mu_h[h_id] = np.random.normal(ga_h, np.sqrt(1.0 / (la_h * tau_h[h_id])))
+        T[h_id] = np.random.normal(mu_h[h_id], np.sqrt(1.0 / tau_h[h_id]))
+    for g_id in data.graders.iterkeys():
+        tau_g[g_id] = np.random.gamma(al_g, 1.0 / be_g)
+        mu_g[g_id] = np.random.normal(ga_g, np.sqrt(1.0 / (la_g * tau_g[g_id])))
+        B[g_id] = np.random.normal(mu_g[g_id], np.sqrt(1.0 / tau_g[g_id]))
     
     # Tracers initialising
-    acc_n_v = list()
-    acc_u_h = defaultdict(list)
-    acc_t_h = defaultdict(list)
-    acc_u_g = defaultdict(list)
-    acc_t_g = defaultdict(list)
-    acc_T = defaultdict(list)
-    acc_B = defaultdict(list)
+    traces_n_v = list()
+    traces_mu_h = defaultdict(list)
+    traces_tau_h = defaultdict(list)
+    traces_mu_g = defaultdict(list)
+    traces_tau_g = defaultdict(list)
+    traces_T = defaultdict(list)
+    traces_B = defaultdict(list)
 
+    # Execution of Gibbs sampling
     tw = time.time()
-    for r in range(burn_in + samples):
-        print "\r%i" % (r+1) + " out of %i" % (burn_in + samples),
+    for step in range(burn_in + samples):
+        print "\r%i out of %i" % ((step + 1), (burn_in + samples)),
         
         # Sample T
         for h, handin in data.handins.iteritems():
@@ -444,11 +461,12 @@ def gibbs_model(data, samples, burn_in=0):
             sum_ = 0.0
             for g in handin.graders:
                 val = handin.get_handin_score(g.id)
-                if val <> None:
+                if val is not None:
                     n_gradings = n_gradings + 1.0
                     sum_ = sum_ + val - B[g.id]
-            v = n_v*n_gradings+t_h[h]
-            T[h] = np.random.normal((u_h[h]*t_h[h]+n_v*sum_)/v,np.sqrt(1.0/v))
+            v = n_v * n_gradings + tau_h[h]
+            T[h] = np.random.normal((mu_h[h] * tau_h[h] + n_v * sum_) / v,
+                                    np.sqrt(1.0 / v))
 
         # Sample B
         for g, grader in data.graders.iteritems():
@@ -456,73 +474,79 @@ def gibbs_model(data, samples, burn_in=0):
             sum_ = 0.0
             for handin in grader.handins:
                 val = handin.get_handin_score(g)
-                if val <> None:
+                if val is not None:
                     n_gradings = n_gradings + 1.0
                     sum_ = sum_ + val - T[handin.id]
-            v = n_v*n_gradings+t_g[g]
-            B[g] = np.random.normal((u_g[g]*t_g[g]+n_v*sum_)/v,np.sqrt(1.0/v))
+            v = n_v * n_gradings + tau_g[g]
+            B[g] = np.random.normal((mu_g[g] * tau_g[g] + n_v * sum_) / v,
+                                    np.sqrt(1.0 / v))
 
-        # Sample e
+        # Sample n_v
         sum_ = 0.0
         n_eval = 0
         for h, handin in data.handins.iteritems():
             for grader in handin.graders:
                 val = handin.get_handin_score(grader.id)
-                if val <> None:
+                if val is not None:
                     n_eval = n_eval + 1
-                    sum_ = sum_ + np.square(val - (T[h]+B[grader.id]))
-        n_v = np.random.gamma(al_n+0.5*n_eval,1.0 / (be_n+0.5*sum_))
+                    sum_ = sum_ + (val - (T[h] + B[grader.id])**2)
+        n_v = np.random.gamma(al_n + 0.5 * n_eval, 1.0 / (be_n + 0.5 * sum_))
 
-        # Sample u_h and t_h
+        # Sample mu_h and tau_h
         for h in data.handins.iterkeys():
-            la_ = (la_h+1.0)
-            al_ = al_h+0.5
-            be_ = be_h+0.5*((la_h*np.square(T[h]-ga_h))/la_)
-            t_h[h] = np.random.gamma(al_,1.0/be_)
-            u_h[h] = np.random.normal((la_h*ga_h+T[h])/la_,np.sqrt(1.0 / (la_*t_h[h])))
+            la_ = (la_h + 1.0)
+            al_ = al_h + 0.5
+            be_ = be_h + 0.5 * ((la_h * (T[h] - ga_h)**2) / la_)
+            tau_h[h] = np.random.gamma(al_, 1.0 / be_)
+            mu_h[h] = np.random.normal((la_h * ga_h + T[h]) / la_,
+                                       np.sqrt(1.0 / (la_ * tau_h[h])))
 
-        
-        # Sample u_g and t_g
+        # Sample mu_g and tau_g
         for g in data.graders.iterkeys():
-            la_ = (la_g+1.0)
-            al_ = al_g+0.5
-            be_ = be_g+0.5*((la_g*np.square(B[g]-ga_g))/la_)
-            t_g[g] = np.random.gamma(al_,1.0/be_)
-            u_g[g] = np.random.normal((la_g*ga_g+B[g])/la_,np.sqrt(1.0 / (la_*t_g[g])))
+            la_ = (la_g + 1.0)
+            al_ = al_g + 0.5
+            be_ = be_g + 0.5 * ((la_g * (B[g] - ga_g)**2) / la_)
+            tau_g[g] = np.random.gamma(al_, 1.0 / be_)
+            mu_g[g] = np.random.normal((la_g * ga_g + B[g]) / la_,
+                                       np.sqrt(1.0 / (la_ * tau_g[g])))
                         
         # Collect tracings
-        if r > burn_in:
-            acc_n_v.append(n_v)
+        if step > burn_in:
+            traces_n_v.append(n_v)
             for h in data.handins.iterkeys():
-                acc_u_h[h].append(u_h[h])
-                acc_t_h[h].append(t_h[h])
-                acc_T[h].append(T[h])
+                traces_mu_h[h].append(mu_h[h])
+                traces_tau_h[h].append(tau_h[h])
+                traces_T[h].append(T[h])
             for g in data.graders.iterkeys():
-                acc_u_g[g].append(u_g[g])
-                acc_t_g[g].append(t_g[g]) 
-                acc_B[g].append(B[g])
+                traces_mu_g[g].append(mu_g[g])
+                traces_tau_g[g].append(tau_g[g])
+                traces_B[g].append(B[g])
                     
     print
     print "Wall time: %f" % (time.time() - tw)
     
-    traces = {'n_v' : acc_n_v,
-              'u_h' : acc_u_h,
-              't_h' : acc_t_h,
-              'u_g' : acc_u_g,
-              't_g' : acc_t_g,
-              'T' : acc_T,
-              'B' : acc_B}
+    traces = {'n_v': traces_n_v,
+              'mu_h': traces_mu_h,
+              'tau_h': traces_tau_h,
+              'mu_g': traces_mu_g,
+              'tau_g': traces_tau_g,
+              'T': traces_T,
+              'B': traces_B}
 
     return traces
 
 def gibbs_ext_model(data, samples, burn_in=0):
+    '''Performs Gibbs sampling on an assignment
+    object. Returns the found latent score for each hand-ins
+    and the bias of each grader
+
+    Keyword arguments:
+    samples -- the number of samples to run
+    burn-in -- added perirod to burn-in the samples.
+    '''
     
-    # Counts
-    N_H = len(data.handins) # Number of handins
-    N_G = len(data.graders) # Number of graders
-    N_Q = len(data.questions) # Number of graders
-    N_g = data.n_gradings   # Number of gradings
-    N_eval = N_g*N_G   # Number of evaluations in total
+    # Number of graders (constant for all hand-ins)
+    N_Q = len(data.questions)
     
     # Hyperparameters
     ga_h = 0.5
@@ -539,49 +563,50 @@ def gibbs_ext_model(data, samples, burn_in=0):
     be_n = 1.0
     
     # Prior parameters
-    u_h = dict()
-    t_h = dict()
+    mu_h = dict()
+    tau_h = dict()
+    mu_g = dict()
+    tau_g = dict()
     T = defaultdict(dict)
     B = defaultdict(dict)
-    u_g = dict()
-    t_g = dict()
 
     # Draw from priors
-    n_v = np.random.gamma(al_n,1.0/be_n)
+    n_v = np.random.gamma(al_n, 1.0 / be_n)
     for h in data.handins.iterkeys():
-        t_h[h] = np.random.gamma(al_h,1.0/be_h)
-        u_h[h] = np.random.normal(ga_h,np.sqrt(1.0/(la_h * t_h[h])))
-        for q in data.questions.iterkeys():        
-            T[h][q] = np.random.normal(u_h[h],np.sqrt(1.0/t_h[h]))
-    for g in data.graders.iterkeys():
-        t_g[g] = np.random.gamma(al_g,1.0/be_g)
-        u_g[g] = np.random.normal(ga_g,np.sqrt(1.0/(la_g * t_g[g])))
+        tau_h[h] = np.random.gamma(al_h, 1.0 / be_h)
+        mu_h[h] = np.random.normal(ga_h, np.sqrt(1.0 / (la_h * tau_h[h])))
         for q in data.questions.iterkeys():
-            B[str(g)][str(q)] = np.random.normal(u_g[g],np.sqrt(1.0/t_g[g]))
-            
-    # Gibbs sampling #
+            T[h][q] = np.random.normal(mu_h[h], np.sqrt(1.0 / tau_h[h]))
+    for g in data.graders.iterkeys():
+        tau_g[g] = np.random.gamma(al_g, 1.0 / be_g)
+        mu_g[g] = np.random.normal(ga_g, np.sqrt(1.0 / (la_g * tau_g[g])))
+        for q in data.questions.iterkeys():
+            B[g][q] = np.random.normal(mu_g[g], np.sqrt(1.0 / tau_g[g]))
     
     # Tracers initialising
-    acc_n_v = list()
-    acc_u_h = defaultdict(list)
-    acc_t_h = defaultdict(list)
-    acc_u_g = defaultdict(list)
-    acc_t_g = defaultdict(list)
-    acc_T = defaultdict(lambda: defaultdict(list))
-    acc_B = defaultdict(lambda: defaultdict(list))
+    traces_n_v = list()
+    traces_mu_h = defaultdict(list)
+    traces_tau_h = defaultdict(list)
+    traces_mu_g = defaultdict(list)
+    traces_tau_g = defaultdict(list)
+    traces_T = defaultdict(lambda: defaultdict(list))
+    traces_B = defaultdict(lambda: defaultdict(list))
 
     tw = time.time()
-    for r in range(burn_in + samples):
-        print "\r%i" % (r+1) + " out of %i" % (burn_in + samples),
+    for step in range(burn_in + samples):
+        print "\r%i out of %i" % ((step + 1), (burn_in + samples)),
+
         # Sample T
         for h, handin in data.handins.iteritems():
-            for q, answers in handin.gradeings.iteritems():
+            for q, answers in handin.gradings.iteritems():
                 n_gradings = len(answers.answers)
                 sum_ = 0.0
                 for g, val in answers.answers.iteritems():
                     sum_ = sum_ + val - B[str(g)][str(q)]
-                v = n_v*n_gradings+t_h[h]
-                T[h][q] = np.random.normal((u_h[h]*t_h[h]+n_v*sum_)/v,np.sqrt(1.0/v))
+                v = n_v * n_gradings + tau_h[h]
+                T[h][q] = np.random.normal((mu_h[h] * tau_h[h] +
+                                            n_v * sum_) / v,
+                                           np.sqrt(1.0 / v))
             
         # Sample B
         for g, grader in data.graders.iteritems():
@@ -589,77 +614,85 @@ def gibbs_ext_model(data, samples, burn_in=0):
                 n_gradings = len(grader.handins)
                 sum_ = 0.0
                 for h in grader.handins:
-                    if g in h.gradeings[q].answers:
-                        sum_ = sum_ + h.gradeings[q].answers[g] - T[h.id][q]
-                v = n_v * n_gradings + t_g[g]
-                B[g][q] = np.random.normal((u_g[g]*t_g[g]+n_v*sum_)/v,np.sqrt(1.0/v))
+                    if g in h.gradings[q].answers:
+                        sum_ = sum_ + h.gradings[q].answers[g] - T[h.id][q]
+                v = n_v * n_gradings + tau_g[g]
+                B[g][q] = np.random.normal((mu_g[g] * tau_g[g] +
+                                            n_v * sum_) / v,
+                                           np.sqrt(1.0 / v))
         
         # Sample e
         sum_ = 0.0
         n_eval = 0
         for h, handin in data.handins.iteritems():
-            for q, answers in handin.gradeings.iteritems():
+            for q, answers in handin.gradings.iteritems():
                 for g, answer_val in answers.answers.iteritems():
                     n_eval = n_eval + 1
-                    sum_ = sum_ + np.square(answer_val - (T[h][q]+B[g][q]))
-        n_v = np.random.gamma(al_n+0.5*n_eval,1.0 / (be_n+0.5*sum_))
+                    sum_ = sum_ + (answer_val - (T[h][q] + B[g][q]))**2
+        n_v = np.random.gamma(al_n + 0.5 * n_eval, 1.0 / (be_n + 0.5 * sum_))
 
         # Sample u_q and t_q
         for h in data.handins.iterkeys():
-            la_ = (la_h+N_Q)
+            la_ = (la_h + N_Q)
             sum_q = 0.0
             for q in data.questions.iterkeys():
                 sum_q = sum_q + T[h][q]
             mean_q = sum_q / N_Q
             sum_minus = 0.0
             for q in data.questions.iterkeys():
-                sum_minus = sum_minus + np.square(T[h][q]-mean_q)
-            al_ = al_h+0.5*N_Q
-            be_ = be_h+0.5*(N_Q*sum_minus+(N_Q*la_h*np.square(mean_q-ga_h))/la_)
-            t_h[h] = np.random.gamma(al_,1.0 / be_)
-            u_h[h] = np.random.normal((la_h*ga_h+sum_q)/la_,np.sqrt(1.0/(la_*t_h[h])))
+                sum_minus = sum_minus + (T[h][q] - mean_q)**2
+            al_ = al_h + 0.5 * N_Q
+            be_ = be_h + 0.5 * (N_Q * sum_minus + (N_Q * la_h *
+                                (mean_q - ga_h)**2) / la_)
+            tau_h[h] = np.random.gamma(al_, 1.0 / be_)
+            mu_h[h] = np.random.normal((la_h * ga_h + sum_q) / la_,
+                                       np.sqrt(1.0 / (la_ * tau_h[h])))
 
-        # Sample u_g and t_g
+        # Sample mu_g and tau_g
         for g in data.graders.iterkeys():
-            la_ = (la_g+N_Q)
+            la_ = (la_g + N_Q)
             sum_q = 0.0
             for q in data.questions.iterkeys():
                 sum_q = sum_q + B[g][q]
             mean_q = sum_q / N_Q
             sum_minus = 0.0
             for q in data.questions.iterkeys():
-                sum_minus = sum_minus + np.square(B[g][q]-mean_q)
-            al_ = al_g+0.5*N_Q
-            be_ = be_g+0.5*(N_Q*sum_minus+(N_Q*la_g*np.square(mean_q-ga_g))/la_)
-            t_g[g] = np.random.gamma(al_,1.0 / be_)
-            u_g[g] = np.random.normal((la_g*ga_g+sum_q)/la_,np.sqrt(1.0/(la_*t_g[g])))
+                sum_minus = sum_minus + (B[g][q] - mean_q)**2
+            al_ = al_g + 0.5 * N_Q
+            be_ = be_g + 0.5 * (N_Q * sum_minus +
+                                (N_Q * la_g *
+                                 (mean_q - ga_g)**2) / la_)
+            tau_g[g] = np.random.gamma(al_, 1.0 / be_)
+            mu_g[g] = np.random.normal((la_g * ga_g + sum_q) / la_,
+                                       np.sqrt(1.0 / (la_ * tau_g[g])))
                         
         # Collect tracings
-        if r > burn_in:
-            acc_n_v.append(n_v)
+        if step > burn_in:
+            traces_n_v.append(n_v)
             for h in data.handins.iterkeys():
-                acc_u_h[h].append(u_h[h])
-                acc_t_h[h].append(t_h[h])
+                traces_mu_h[h].append(mu_h[h])
+                traces_tau_h[h].append(tau_h[h])
                 for q in data.questions.iterkeys():
-                    acc_T[h][q].append(T[h][q])
+                    traces_T[h][q].append(T[h][q])
             for g in data.graders.iterkeys():
-                acc_u_g[g].append(u_g[g])
-                acc_t_g[g].append(t_g[g])
+                traces_mu_g[g].append(mu_g[g])
+                traces_tau_g[g].append(tau_g[g])
                 for q in data.questions.iterkeys():
-                    acc_B[g][q].append(B[g][q])
+                    traces_B[g][q].append(B[g][q])
                     
     print
     print "Wall time: %f" % (time.time() - tw)
     
-    traces = {'n_v' : acc_n_v,
-              'u_h' : acc_u_h,
-              't_h' : acc_t_h,
-              'u_g' : acc_u_g,
-              't_g' : acc_t_g,
-              'T' : acc_T,
-              'B' : acc_B}
+    traces = {'n_v': traces_n_v,
+              'mu_h': traces_mu_h,
+              'tau_h': traces_tau_h,
+              'mu_g': traces_mu_g,
+              'tau_g': traces_tau_g,
+              'T': traces_T,
+              'B': traces_B}
 
     return traces
+
 g_b = list()
 g_e_b = list()
 mh_b = list()
@@ -668,9 +701,9 @@ g_e_s = list()
 mh_s = list()
 obs_s = list()
 
-graders = 50
-questions = 10
-gradings = 1
+graders = 200
+questions = 20
+gradings = 5
 
 print "Graders: %i" % graders
 print "Gradings: %i" % gradings
@@ -724,11 +757,11 @@ for j in range(5):
             text = id
             val = list()
             for (name, data) in results:
-                val.append(np.mean(data['u_h'][id]))
+                val.append(np.mean(data['mu_h'][id]))
             obs_scores = list()
             for grader in t.handins[id].graders:
                 obs_scores.extend(map(lambda x: x[1], t.handins[id].get_grader_answers(grader.id)))
-            scores.append((text, val, np.mean(data['u_h'][id]), t.handins[id].mean, obs_scores))
+            scores.append((text, val, np.mean(data['mu_h'][id]), t.handins[id].mean, obs_scores))
         scores.sort(key=lambda x: x[3]) 
 
         true_score = map(lambda x : x[3],scores)
@@ -760,8 +793,8 @@ for j in range(5):
             text = text + ": %i" % len(t.graders[id].handins)
             val = list()
             for (name,data) in results:
-                val.append(np.mean(data['u_g'][id]))
-            scores.append((text,val,np.mean(data['u_g'][id]),t.graders[id].mean))
+                val.append(np.mean(data['mu_g'][id]))
+            scores.append((text,val,np.mean(data['mu_g'][id]),t.graders[id].mean))
         scores.sort(key=lambda x:x[3])        
         
         true_bias = map(lambda x : x[3],scores)
